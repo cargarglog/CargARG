@@ -1,0 +1,8 @@
+{
+  "name": "CargARG",
+  "description": "Una aplicación web que conecta a camioneros con empresas que necesitan transportar mercancías, con un asistente de IA impulsado por Gemini para detalles de viajes, información de la empresa y asistencia en ruta.",
+  "requestFramePermissions": [
+    "geolocation",
+    "camera"
+  ]
+}
