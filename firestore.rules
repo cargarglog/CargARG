@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Usuarios: solo leen/escriben su propio perfil
+    match /users/{userId} {
+      allow read, write: if request.auth != null
+        && request.auth.uid == userId;
+    }
+
+    // Logs de verificación en el nuevo path
+    match /identity_verification_logs/{userId}/attempts/{attemptId} {
+
+      // El usuario solo puede crear su propio intento
+      allow create: if request.auth != null
+        && request.auth.uid == userId;
+
+      // El usuario puede leer solo sus registros
+      allow read: if request.auth != null
+        && request.auth.uid == userId;
+
+      // El usuario no puede modificar ni borrar tras crear
+      allow update, delete: if false;
+
+      // Staff puede leer/moderar todos los intentos
+      allow read, update: if request.auth != null
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff';
+    }
+
+    // Cargas (publicaciones)
+    match /loads/{loadId} {
+      // Alta de carga por usuario autenticado
+      allow create: if request.auth != null;
+
+      // Lectura pública para matching
+      allow read: if true;
+
+      // Solo el creador puede actualizar/eliminar su carga
+      allow update, delete: if request.auth != null
+        && request.auth.uid == resource.data.companyId;
+    }
+  }
+}
