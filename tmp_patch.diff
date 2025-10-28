@@ -1,0 +1,36 @@
+*** Begin Patch
+*** Update File: src/App.tsx
+@@
+-        if (user.role === UserRole.DRIVER) {
+-            const loadsQuery = firestore.query(
+-                firestore.collectionGroup(db, "loads"),
+-                firestore.or(
+-                    firestore.where("status", "==", LoadStatus.AVAILABLE),
+-                    firestore.where("driverId", "==", user.id)
+-                )
+-            );
++        if (user.role === UserRole.DRIVER) {
++            const loadsQuery = firestore.query(
++                firestore.collection(db, "loads"),
++                firestore.or(
++                    firestore.where("status", "==", LoadStatus.AVAILABLE),
++                    firestore.where("driverId", "==", user.id)
++                )
++            );
+@@
+-        let loadsQuery;
+-        if (user.role === UserRole.COMPANY) {
+-            loadsQuery = firestore.query(firestore.collection(db, "users", user.id, "loads"));
+-        } else {
+-            loadsQuery = firestore.query(firestore.collectionGroup(db, "loads"));
+-        }
++        let loadsQuery;
++        if (user.role === UserRole.COMPANY) {
++            loadsQuery = firestore.query(
++                firestore.collection(db, "loads"),
++                firestore.where("companyId", "==", user.id)
++            );
++        } else {
++            loadsQuery = firestore.query(firestore.collection(db, "loads"));
++        }
+*** End Patch

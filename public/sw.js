@@ -38,47 +38,39 @@ self.addEventListener('activate', (event) => {
 
 // Durante las solicitudes de red, manejamos la caché y la red
 self.addEventListener('fetch', (event) => {
-  // Ignoramos solicitudes a ciertos dominios como Firebase y Google APIs
   const url = new URL(event.request.url);
-  if (
-    event.request.url.includes('firebase') ||
-    event.request.url.includes('googleapis.com') ||
-    url.pathname === '/manifest.json'
-  ) {
-    return fetch(event.request); // No usamos caché para estas solicitudes
+
+  // 1) No interceptar peticiones de otros orígenes (evita CORS/HTML como JS)
+  if (url.origin !== self.location.origin) {
+    return; // dejar que el navegador maneje la solicitud
+  }
+
+  // 2) Ignorar manifest
+  if (url.pathname === '/manifest.json') {
+    return;
   }
 
   event.respondWith(
-    caches.match(event.request).then((response) => {
-      // Si encontramos el recurso en la caché, lo devolvemos
-      if (response) {
-        return response;
-      }
+    (async () => {
+      try {
+        // Cache-first para recursos de mismo origen
+        const cached = await caches.match(event.request);
+        if (cached) return cached;
 
-      const fetchRequest = event.request.clone();
-
-      return fetch(fetchRequest).then(
-        (response) => {
-          // Si no obtenemos una respuesta válida, retornamos
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
-
-          const responseToCache = response.clone();
-
-          // Guardamos el nuevo recurso en la caché
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-
-          return response;
-        },
-        (error) => {
-          // Si ocurre un error con la red, mostramos una página offline
-          console.log('Fetch failed; returning offline page', error);
-          return caches.match('/offline.html'); // Aquí puedes agregar una página de error offline
+        const resp = await fetch(event.request);
+        if (resp && resp.status === 200 && resp.type === 'basic') {
+          const cache = await caches.open(CACHE_NAME);
+          cache.put(event.request, resp.clone());
         }
-      );
-    })
+        return resp;
+      } catch (err) {
+        // Offline fallback sólo para navegaciones
+        if (event.request.mode === 'navigate') {
+          const offline = await caches.match('/offline.html');
+          if (offline) return offline;
+        }
+        throw err;
+      }
+    })()
   );
 });
