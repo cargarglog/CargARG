@@ -1,5 +1,15 @@
 {
   "projects": {
-    "default": "cargarg"
-  }
+    "default": "cargarg-logistica"
+  },
+  "targets": {
+    "cargarg": {
+      "hosting": {
+        "cargarg-logistica": [
+          "cargarg-logistica"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
