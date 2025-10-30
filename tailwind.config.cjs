@@ -1,19 +1,19 @@
 /** @type {import('tailwindcss').Config} */
 const colors = require('tailwindcss/colors');
 
-// Paleta de marca basada en el nuevo logo (rojo/negro/gris)
+// Paleta de marca basada en el nuevo logo (rojo profundo, menos brillante)
 const brandRed = {
-  50:  '#FFF1F1',
-  100: '#FFE0E0',
-  200: '#FFC1C1',
-  300: '#FF8A8A',
-  400: '#FF4D4D',
-  500: '#FF2D2D', // Principal
-  600: '#E61E1E',
-  700: '#C41616',
-  800: '#A11212',
-  900: '#7E0E0E',
-  950: '#330505',
+  50:  '#FDF2F2',
+  100: '#FDE8E8',
+  200: '#FBD5D5',
+  300: '#F8B4B4',
+  400: '#F98080',
+  500: '#E02424', // Principal (rojo profundo)
+  600: '#C81E1E',
+  700: '#9B1C1C',
+  800: '#771D1D',
+  900: '#611A1A',
+  950: '#330F0F',
 };
 
 module.exports = {
