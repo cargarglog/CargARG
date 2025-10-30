@@ -10,8 +10,8 @@
   "theme_color": "#121212",
   "icons": [
     {
-      "src": "/assets/icons/icon-192.png",
-      "sizes": "192x192",
+      "src": "/assets/icons/icon-1024.png",
+      "sizes": "1024x1024",
       "type": "image/png",
       "purpose": "maskable any"
     },
