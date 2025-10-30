@@ -6,7 +6,7 @@ interface LoginPageProps {
     onLogin: (email: string, pass: string) => Promise<any>;
     onRegister: (email: string, pass: string, role: UserRole, companyName?: string) => Promise<any>;
     onNavigate: (page: string) => void;
-    onGoogleSignIn: () => Promise<void>;
+    onGoogleSignIn: (role: UserRole, companyName?: string) => Promise<void>;
 }
 
 const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onRegister, onNavigate, onGoogleSignIn }) => {
@@ -59,7 +59,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onRegister, onNavigate, 
         setError('');
         setLoading(true);
         try {
-            await onGoogleSignIn();
+            await onGoogleSignIn(role, companyName || undefined);
             // onAuthStateChanged will handle navigation on success
         } catch (error: any) {
             let errorMessage = "Error al iniciar sesión con Google. Intenta de nuevo.";

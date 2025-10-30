@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, Suspense } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import { User, UserRole, Load, Plan, Location, LoadStatus, PlaceLocation } from './types';
 import Navbar from './components/Header';
 import Dashboard from './components/Dashboard';
@@ -75,24 +75,20 @@ const App: React.FC = () => {
                     const firebaseUser = result.user;
                     const userDocRef = firestore.doc(db, 'users', firebaseUser.uid);
                     // Idempotente: no sobrescribe si ya existe
-                    const intendedRole = (sessionStorage.getItem('cargarg:intendedRole') as UserRole) || UserRole.DRIVER;
-                    const intendedCompany = sessionStorage.getItem('cargarg:intendedCompany');
                     await firestore.setDoc(userDocRef, {
                         uid: firebaseUser.uid,
                         email: (firebaseUser.email || '').toLowerCase().trim(),
-                        role: intendedRole,
-                        companyName: intendedRole === UserRole.COMPANY ? (intendedCompany || null) : null,
+                        role: UserRole.DRIVER,
+                        companyName: null,
                         perfilEstado: 'pending_attempt1', verificationStatus: 'pending',
                         plan: 'free',
                         createdAt: firestore.serverTimestamp(),
                     }, { merge: true });
-                    sessionStorage.removeItem('cargarg:intendedRole');
-                    sessionStorage.removeItem('cargarg:intendedCompany');
                 }
             } catch (e) {
                 console.warn('[Google Redirect] Error post-redirect:', e);
             } finally {
-                // Limpia bandera si se us�
+                // Limpia bandera si se us?
                 sessionStorage.removeItem('cargarg:doRedirectResult');
                 redirectPendingRef.current = false;
             }
@@ -106,7 +102,7 @@ const App: React.FC = () => {
         );
 
         const unsubscribe = authFirebase.onAuthStateChanged(auth, async (firebaseUser) => {
-            // No interrumpir cuando ya hay usuario; solo evitar parpadeo durante registro antes de que Auth establezca la sesi�n
+            // No interrumpir cuando ya hay usuario; solo evitar parpadeo durante registro antes de que Auth establezca la sesi?n
             if (isRegisteringRef.current && !firebaseUser) {
                 return;
             }
@@ -118,20 +114,16 @@ const App: React.FC = () => {
                 // Auto-provisiona documento del usuario si no existe (evita quedarse en login)
                 if (!userDocSnap.exists()) {
                     try {
-                        const intendedRole = (sessionStorage.getItem('cargarg:intendedRole') as UserRole) || UserRole.DRIVER;
-                        const intendedCompany = sessionStorage.getItem('cargarg:intendedCompany');
                         await firestore.setDoc(userDocRef, {
                             uid: firebaseUser.uid,
                             email: (firebaseUser.email || '').toLowerCase().trim(),
-                            role: intendedRole,
-                            companyName: intendedRole === UserRole.COMPANY ? (intendedCompany || null) : null,
+                            role: UserRole.DRIVER,
+                            companyName: null,
                             perfilEstado: 'pending_attempt1', verificationStatus: 'pending',
                             plan: 'free',
                             createdAt: firestore.serverTimestamp(),
                         });
                         userDocSnap = await firestore.getDoc(userDocRef);
-                        sessionStorage.removeItem('cargarg:intendedRole');
-                        sessionStorage.removeItem('cargarg:intendedCompany');
                     } catch (e) {
                         console.warn("[Auth] No se pudo crear el doc de usuario:", e);
                     }
@@ -203,7 +195,7 @@ const App: React.FC = () => {
             const data = doc.data();
         
             const defaultLocation: PlaceLocation = {
-                address: 'Ubicaci�n no especificada',
+                address: 'Ubicaci?n no especificada',
                 lat: -34.6037,
                 lng: -58.3816,
                 placeId: ''
@@ -272,7 +264,7 @@ const App: React.FC = () => {
     };
     
     const handleLogin = async (email: string, password: string) => {
-        console.log(`[Login] Intento de inicio de sesi�n para ${email}.`);
+        console.log(`[Login] Intento de inicio de sesi?n para ${email}.`);
         return authFirebase.signInWithEmailAndPassword(auth, email, password);
     };
     
@@ -325,9 +317,9 @@ const App: React.FC = () => {
             }
             
             if (error.code === 'auth/email-already-in-use') {
-                throw new Error("Este correo electr�nico ya est� en uso.");
+                throw new Error("Este correo electr?nico ya est? en uso.");
             }
-            throw new Error("Ocurri� un error durante el registro. Por favor, intenta de nuevo.");
+            throw new Error("Ocurri? un error durante el registro. Por favor, intenta de nuevo.");
         } finally {
             isRegisteringRef.current = false;
         }
@@ -440,10 +432,10 @@ const App: React.FC = () => {
         if (auth.currentUser) {
             try {
                 await authFirebase.sendEmailVerification(auth.currentUser);
-                console.log("[Verificaci�n] Correo reenviado ?");
-                alert("Se ha reenviado el correo de verificaci�n.");
+                console.log("[Verificaci?n] Correo reenviado ?");
+                alert("Se ha reenviado el correo de verificaci?n.");
             } catch (error) {
-                console.error("[Verificaci�n] Error al reenviar correo:", error);
+                console.error("[Verificaci?n] Error al reenviar correo:", error);
                 alert("Hubo un error al reenviar el correo.");
             }
         }
@@ -453,10 +445,10 @@ const App: React.FC = () => {
        if (!auth.currentUser) return;
        await auth.currentUser.reload();
        if (auth.currentUser.emailVerified && user && !user.emailVerified) {
-           console.log("[Verificaci�n] Email verificado ?");
+           console.log("[Verificaci?n] Email verificado ?");
            setUser(prevUser => ({ ...prevUser!, emailVerified: true }));
        } else {
-           console.log("[Verificaci�n] Email no verificado ?");
+           console.log("[Verificaci?n] Email no verificado ?");
        }
     };
     
@@ -529,7 +521,7 @@ const App: React.FC = () => {
             {!isOnline && (
                 <div className="bg-yellow-500 text-black text-center p-2 font-semibold fixed top-0 w-full z-[100]">
                     <i className="fas fa-exclamation-triangle mr-2"></i>
-                    Est�s desconectado. La funcionalidad puede ser limitada.
+                    Est?s desconectado. La funcionalidad puede ser limitada.
                 </div>
             )}
             <Navbar user={user} onNavigate={handleNavigate} onLogout={handleLogout} isOnline={isOnline} />
@@ -542,6 +534,7 @@ const App: React.FC = () => {
 }
 
 export default App;
+
 
 
 
