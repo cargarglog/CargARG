@@ -1,6 +1,5 @@
 {
   "hosting": {
-    "site": "cargarg-logistica",
     "public": "dist",
     "ignore": [
       "firebase.json",
