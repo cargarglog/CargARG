@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Global styles for CargARG application */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Brand overrides: migrate old blue/orange accents to the new red brand */
+/* Map previous arbitrary Tailwind classes to brand red without touching TSX */
+.bg-\[\#00529B\] { background-color: #771D1D !important; }
+.text-\[\#00529B\] { color: #771D1D !important; }
+.border-\[\#00529B\] { border-color: #771D1D !important; }
+
+.bg-\[\#F57921\] { background-color: #C81E1E !important; }
+.text-\[\#F57921\] { color: #E02424 !important; }
+.border-\[\#F57921\] { border-color: #C81E1E !important; }
+
+.focus\:ring-\[\#F57921\]:focus { --tw-ring-color: #E02424 !important; }
+.focus\:border-\[\#F57921\]:focus { border-color: #E02424 !important; }
+.hover\:border-\[\#F57921\]:hover { border-color: #E02424 !important; }
+
+/* Orange hover -> brand red hover */
+.hover\:bg-orange-500:hover { background-color: #E02424 !important; }
+
+/* Selection highlight aligned with brand */
+::selection { background: #E02424; color: #ffffff; }
+
+/* Inside the primary plan card (formerly blue), render price text in light neutral */
+.bg-\[\#00529B\] .text-\[\#F57921\] { color: #f3f4f6 !important; }
