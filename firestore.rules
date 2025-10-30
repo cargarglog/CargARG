@@ -2,42 +2,71 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Usuarios: solo leen/escriben su propio perfil
-    match /users/{userId} {
-      allow read, write: if request.auth != null
-        && request.auth.uid == userId;
+    function isSignedIn() {
+      return request.auth != null;
     }
 
-    // Logs de verificación en el nuevo path
-    match /identity_verification_logs/{userId}/attempts/{attemptId} {
+    function isSelf(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
 
-      // El usuario solo puede crear su propio intento
-      allow create: if request.auth != null
-        && request.auth.uid == userId;
-
-      // El usuario puede leer solo sus registros
-      allow read: if request.auth != null
-        && request.auth.uid == userId;
-
-      // El usuario no puede modificar ni borrar tras crear
-      allow update, delete: if false;
-
-      // Staff puede leer/moderar todos los intentos
-      allow read, update: if request.auth != null
+    function isStaff() {
+      return isSignedIn()
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff';
     }
 
-    // Cargas (publicaciones)
+    // USERS
+    match /users/{userId} {
+      allow read, update, delete: if isSelf(userId);
+      allow read, update: if isStaff();
+      allow create: if isSignedIn();
+    }
+
+    // VERIFICATION ATTEMPTS
+    match /identity_verification_logs/{userId}/attempts/{attemptId} {
+      allow create: if isSelf(userId);
+      allow read: if isSelf(userId) || isStaff();
+      // Owner can only update capture links + timestamps + entered DNI
+      allow update: if isSelf(userId)
+        && request.resource.data.diff(resource.data)
+            .changedKeys()
+            .hasOnly([
+              'dniFrontUri', 'dniBackUri', 'licenseFrontUri', 'licenseBackUri',
+              'selfieUri', 'updatedAt', 'userSubmittedDni'
+            ]);
+      // Staff moderation
+      allow update: if isStaff();
+      allow delete: if false;
+    }
+
+    // DNI Registry (Integration)
+    match /dniRegistry/{dniNumber} {
+      allow read: if isStaff();
+      // Writes only from Functions/custom tokens
+      allow create, update: if request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'custom';
+      allow delete: if false;
+    }
+
+    // LOADS POSTS
     match /loads/{loadId} {
-      // Alta de carga por usuario autenticado
-      allow create: if request.auth != null;
-
-      // Lectura pública para matching
-      allow read: if true;
-
-      // Solo el creador puede actualizar/eliminar su carga
-      allow update, delete: if request.auth != null
+      allow create: if isSignedIn();  // Any user can create a load
+      allow read: if true; // Public
+      // Company can update/delete their post
+      allow update, delete: if isSignedIn()
         && request.auth.uid == resource.data.companyId;
+      // Driver limited transitions
+      allow update: if isSignedIn()
+        && request.resource.data.diff(resource.data).changedKeys().hasOnly(['driverId', 'status'])
+        && (
+            (resource.data.status == 'available'
+              && request.resource.data.status == 'in_progress'
+              && request.resource.data.driverId == request.auth.uid)
+          ||
+            (resource.data.status == 'in_progress'
+              && request.resource.data.status == 'completed'
+              && resource.data.driverId == request.auth.uid)
+        );
     }
   }
 }

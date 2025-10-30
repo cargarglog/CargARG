@@ -1,21 +1,28 @@
-﻿rules_version = '2';
+rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
-    function isSignedIn() { return request.auth != null }
-    function isSelf(userId) { return isSignedIn() && request.auth.uid == userId }
-    function isStaff() {
-      return isSignedIn() && get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'staff'
+
+    function isSignedIn() {
+      return request.auth != null;
     }
 
-    match /verifications/{userId}/{attemptId}/{fileName} {
-      // Solo el usuario sube archivos propios (imágenes <= 10MB)
-      allow write: if isSelf(userId)
-        && request.resource.contentType.matches('image/.*')
-        && request.resource.size < 10 * 1024 * 1024;
+    function isSelf(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
 
-      // Solo ese usuario y staff pueden verlos o borrarlos
-      allow read: if isSelf(userId) || isStaff();
-      allow delete: if isSelf(userId) || isStaff();
+    // CargARG Identity Extended Integration
+    match /verifications/{userId}/{attemptId}/{fileName} {
+      // Upload only by owner, images ≤10MB or videos ≤20MB
+      allow write: if isSelf(userId)
+        && (
+          (request.resource.contentType.matches('image/.*') && request.resource.size < 10 * 1024 * 1024)
+          ||
+          (request.resource.contentType.matches('video/(webm|mp4)') && request.resource.size < 20 * 1024 * 1024)
+        );
+
+      // Read/delete only by owner (no staff via client). Staff moderates via Functions (admin SDK)
+      allow read, delete: if isSelf(userId);
     }
   }
 }
+

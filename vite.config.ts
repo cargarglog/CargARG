@@ -14,10 +14,25 @@ export default defineConfig(({ mode }) => {
           '@': path.resolve(__dirname, 'src'),
         },
       },
-      build: {
+  build: {
         outDir: 'dist', // Output to a 'dist' directory in the project root
         sourcemap: false,
         chunkSizeWarningLimit: 1000,
+        modulePreload: { polyfill: false },
+        rollupOptions: {
+          output: {
+            manualChunks(id) {
+              if (id.includes('node_modules')) {
+                if (id.includes('firebase')) return 'firebase';
+                if (id.includes('@google/genai')) return 'genai';
+                if (id.includes('react')) return 'vendor';
+              }
+            },
+          },
+        },
+        minify: 'esbuild',
+        target: 'es2020',
       },
+      esbuild: mode === 'production' ? { drop: ['console', 'debugger'] } : undefined,
     };
 });

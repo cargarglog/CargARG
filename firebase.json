@@ -1,16 +1,23 @@
 {
-  "hosting": {
-    "public": "dist",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ]
-  },
-  "firestore": {
-    "rules": "database.rules"
-  },
-  "storage": {
-    "rules": "storage.rules"
-  }
+    "hosting":  {
+                    "public":  "dist",
+                    "ignore":  [
+                                   "firebase.json",
+                                   "**/.*",
+                                   "**/node_modules/**"
+                               ]
+                },
+    "firestore":  {
+                      "rules":  "firestore.rules"
+                  },
+    "storage":  {
+                    "rules":  "storage.rules"
+                },
+    "functions":  {
+                      "predeploy":  [
+                                        "npm --prefix \"$RESOURCE_DIR\" install",
+                                        "npm --prefix \"$RESOURCE_DIR\" run build"
+                                    ],
+                      "source":  "functions"
+                  }
 }
