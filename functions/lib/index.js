@@ -37,10 +37,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.placeDetails = exports.placesAutocomplete = exports.guardDniUniqueness = exports.providerWebhook = exports.startPremiumVerification = exports.analyzeWithVisionAndDocAI = void 0;
+require("dotenv/config");
 // CargARG Identity Extended Integration — Firebase Cloud Functions
 // CargARG Identity Extended Integration
 const functions = __importStar(require("firebase-functions/v1"));
 const admin = __importStar(require("firebase-admin"));
+const axios_1 = __importDefault(require("axios"));
 const cors_1 = __importDefault(require("cors"));
 const crypto_1 = __importDefault(require("crypto"));
 const vision_1 = require("@google-cloud/vision");
@@ -241,7 +243,10 @@ function getMapsApiKey() {
     }
 }
 const PLACES_API_URL = 'https://places.googleapis.com/v1';
-exports.placesAutocomplete = functions
+var places_1 = require("./places");
+Object.defineProperty(exports, "placesAutocomplete", { enumerable: true, get: function () { return places_1.placesAutocomplete; } });
+Object.defineProperty(exports, "placeDetails", { enumerable: true, get: function () { return places_1.placeDetails; } });
+const placesAutocompleteLegacy = functions
     .region('us-central1')
     .https.onRequest(async (req, res) => {
     cors(req, res, async () => {
@@ -250,125 +255,118 @@ exports.placesAutocomplete = functions
                 res.status(405).send('Method Not Allowed');
                 return;
             }
-            const apiKey = getMapsApiKey();
-            if (!apiKey) {
-                res.status(500).json({ error: 'maps_api_key_missing' });
-                return;
-            }
-            const q = String((req.query.q || (req.body && req.body.q) || '')).trim();
-            if (!q) {
+            const { q, lang = 'es', region = 'AR', session } = (req.query || {});
+            console.log('[placesAutocomplete] query:', { q, lang, region, session });
+            const PLACES_API_KEY = process.env.PLACES_API_KEY || (functions.config?.() && functions.config().google?.api_key);
+            if (!q || String(q).trim().length === 0) {
                 res.status(400).json({ error: 'q required' });
                 return;
             }
-            const sessionToken = String((req.query.session || (req.body && req.body.session) || '')).trim() || undefined;
-            const languageCode = String((req.query.lang || 'es')).trim();
-            const regionCode = String((req.query.region || 'AR')).trim();
-            const body = {
-                input: q,
-                languageCode,
-                regionCode,
-                sessionToken,
-                includeQueryPredictions: false,
-            };
-            const fieldMask = [
-                'suggestions.placePrediction.place.id',
-                'suggestions.placePrediction.place.displayName.text',
-                'suggestions.placePrediction.place.formattedAddress',
-            ].join(',');
-            const resp = await fetch(`${PLACES_API_URL}/places:autocomplete`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-Goog-Api-Key': apiKey,
-                    'X-Goog-FieldMask': fieldMask,
-                },
-                body: JSON.stringify(body),
-            });
-            if (!resp.ok) {
-                const t = await resp.text().catch(() => '');
-                console.error('[placesAutocomplete] error', resp.status, t);
-                res.status(500).json({ error: 'places_autocomplete_failed' });
+            if (!PLACES_API_KEY) {
+                console.error('[placesAutocomplete] Missing PLACES_API_KEY');
+                res.status(500).json({ error: 'missing_api_key' });
                 return;
             }
-            const data = await resp.json();
-            const items = (data.suggestions || [])
-                .map((s) => {
-                const p = s.placePrediction?.place || {};
-                const id = p.id || (p.name && String(p.name).split('/')[1]) || null;
-                if (!id)
-                    return null;
-                return {
-                    id,
-                    label: p.displayName?.text || p.formattedAddress || '',
-                    address: p.formattedAddress || '',
-                };
-            })
-                .filter(Boolean);
-            res.json({ items });
+            const url = 'https://maps.googleapis.com/maps/api/place/autocomplete/json?strictbounds=false';
+            const isRegionValid = typeof region === 'string' && /^[A-Z]{2}$/.test(region.toUpperCase());
+            const params = {
+                input: String(q),
+                language: String(lang || 'es'),
+                key: PLACES_API_KEY,
+            };
+            if (isRegionValid) {
+                params.components = `country:${region.toUpperCase()}`;
+            }
+            if (session)
+                params.sessiontoken = String(session);
+            const response = await axios_1.default.get(url, { params });
+            const { status, error_message, predictions } = response.data || {};
+            console.log('[placesAutocomplete] provider:', { status, error_message });
+            const items = Array.isArray(predictions)
+                ? predictions.map((p) => ({
+                    id: p.place_id,
+                    label: p.description || p.structured_formatting?.main_text || '',
+                    address: p.description ||
+                        [p.structured_formatting?.main_text, p.structured_formatting?.secondary_text]
+                            .filter(Boolean)
+                            .join(', '),
+                }))
+                : [];
+            res.status(200).json({ items });
         }
-        catch (e) {
-            console.error('[placesAutocomplete] exception', e);
-            res.status(500).json({ error: 'places_autocomplete_failed' });
+        catch (err) {
+            const status = err?.response?.status || 500;
+            const provider = err?.response?.data || err?.message;
+            console.error('[placesAutocomplete] exception:', status, provider);
+            res.status(200).json({ items: [] });
         }
     });
 });
-exports.placeDetails = functions
+const placeDetailsLegacy = functions
     .region('us-central1')
     .https.onRequest(async (req, res) => {
+    // Classic Google Places Details (v0) using web service.
+    // Obtains name, address, and geometry (lat/lng) for a given place_id.
+    // Compatible with frontend calling: /placeDetails?id=<place_id>&lang=es&region=AR&session=<uuid>
     cors(req, res, async () => {
         try {
             if (req.method !== 'GET') {
                 res.status(405).send('Method Not Allowed');
                 return;
             }
-            const apiKey = getMapsApiKey();
-            if (!apiKey) {
-                res.status(500).json({ error: 'maps_api_key_missing' });
-                return;
-            }
-            const id = String(req.query.id || '').trim();
-            if (!id) {
+            // Read query params with sensible defaults
+            const { id, lang = 'es', region = 'AR', session } = (req.query || {});
+            console.log('[placeDetails] query:', { id, lang, region, session });
+            // Read API key from env or functions config
+            const cfg = functions.config?.() || {};
+            const PLACES_API_KEY = process.env.PLACES_API_KEY || cfg?.google?.api_key;
+            // Validate required inputs
+            if (!id || String(id).trim().length === 0) {
                 res.status(400).json({ error: 'id required' });
                 return;
             }
-            const languageCode = String((req.query.lang || 'es')).trim();
-            const regionCode = String((req.query.region || 'AR')).trim();
-            const sessionToken = String((req.query.session || '')).trim() || undefined;
-            const fieldMask = ['id', 'displayName', 'formattedAddress', 'location'].join(',');
-            const url = `${PLACES_API_URL}/places/${encodeURIComponent(id)}`;
-            const params = new URLSearchParams();
-            params.set('languageCode', languageCode);
-            params.set('regionCode', regionCode);
-            if (sessionToken)
-                params.set('sessionToken', sessionToken);
-            const resp = await fetch(`${url}?${params.toString()}`, {
-                method: 'GET',
-                headers: {
-                    'X-Goog-Api-Key': apiKey,
-                    'X-Goog-FieldMask': fieldMask,
-                },
-            });
-            if (!resp.ok) {
-                const t = await resp.text().catch(() => '');
-                console.error('[placeDetails] error', resp.status, t);
-                res.status(500).json({ error: 'places_details_failed' });
+            if (!PLACES_API_KEY) {
+                console.error('[placeDetails] Missing PLACES_API_KEY');
+                res.status(500).json({ error: 'missing_api_key' });
                 return;
             }
-            const data = await resp.json();
-            const loc = data.location?.latLng || data.location || {};
-            const lat = loc?.latitude ?? loc?.lat ?? null;
-            const lng = loc?.longitude ?? loc?.lng ?? null;
-            res.json({
-                id: data.id || id,
-                name: data.displayName?.text || '',
-                address: data.formattedAddress || '',
-                lat,
-                lng,
-            });
+            // Build request to classic Places Details endpoint
+            const url = 'https://maps.googleapis.com/maps/api/place/details/json';
+            const params = {
+                place_id: String(id),
+                language: String(lang || 'es'),
+                region: String(region || 'AR'),
+                fields: 'place_id,name,formatted_address,geometry/location',
+                key: PLACES_API_KEY,
+            };
+            if (session)
+                params.sessiontoken = String(session);
+            // Call provider
+            const response = await axios_1.default.get(url, { params });
+            const { status, error_message, result } = response.data || {};
+            console.log('[placeDetails] provider:', { status, error_message });
+            // If no result, return 404 for clarity
+            if (!result) {
+                res.status(404).json({ error: 'Place not found' });
+                return;
+            }
+            // Extract and normalize the response
+            const out = {
+                id: result.place_id,
+                name: result.name || '',
+                address: result.formatted_address || '',
+                lat: result.geometry?.location?.lat ?? null,
+                lng: result.geometry?.location?.lng ?? null,
+            };
+            // Return success with normalized payload
+            res.status(200).json(out);
         }
-        catch (e) {
-            console.error('[placeDetails] exception', e);
-            res.status(500).json({ error: 'places_details_failed' });
+        catch (err) {
+            // Log detailed error and return 200 with error body to avoid breaking the frontend
+            const status = err?.response?.status || 500;
+            const provider = err?.response?.data || err?.message;
+            console.error('[placeDetails] exception:', status, provider);
+            res.status(200).json({ error: 'details_failed', provider });
         }
     });
 });
