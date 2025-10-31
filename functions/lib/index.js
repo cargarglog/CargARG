@@ -36,7 +36,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.guardDniUniqueness = exports.providerWebhook = exports.startPremiumVerification = exports.analyzeWithVisionAndDocAI = void 0;
+exports.placeDetails = exports.placesAutocomplete = exports.guardDniUniqueness = exports.providerWebhook = exports.startPremiumVerification = exports.analyzeWithVisionAndDocAI = void 0;
 // CargARG Identity Extended Integration — Firebase Cloud Functions
 // CargARG Identity Extended Integration
 const functions = __importStar(require("firebase-functions/v1"));
@@ -228,5 +228,148 @@ exports.guardDniUniqueness = functions.region('us-central1').https.onCall(async 
     const val = d.data();
     const conflict = val.uid && val.uid !== uid && ['verified', 'banned'].includes(val.verificationStatus);
     return { ok: true, conflict };
+});
+// --- Places API (New) proxy endpoints ---
+// Reads API key from environment or functions config. Prefer using a Secret or env var in deployment.
+function getMapsApiKey() {
+    try {
+        const cfg = functions.config?.() || {};
+        return process.env.GOOGLE_MAPS_API_KEY || process.env.GOOGLE_PLACES_API_KEY || cfg?.maps?.key;
+    }
+    catch {
+        return process.env.GOOGLE_MAPS_API_KEY || process.env.GOOGLE_PLACES_API_KEY;
+    }
+}
+const PLACES_API_URL = 'https://places.googleapis.com/v1';
+exports.placesAutocomplete = functions
+    .region('us-central1')
+    .https.onRequest(async (req, res) => {
+    cors(req, res, async () => {
+        try {
+            if (req.method !== 'GET' && req.method !== 'POST') {
+                res.status(405).send('Method Not Allowed');
+                return;
+            }
+            const apiKey = getMapsApiKey();
+            if (!apiKey) {
+                res.status(500).json({ error: 'maps_api_key_missing' });
+                return;
+            }
+            const q = String((req.query.q || (req.body && req.body.q) || '')).trim();
+            if (!q) {
+                res.status(400).json({ error: 'q required' });
+                return;
+            }
+            const sessionToken = String((req.query.session || (req.body && req.body.session) || '')).trim() || undefined;
+            const languageCode = String((req.query.lang || 'es')).trim();
+            const regionCode = String((req.query.region || 'AR')).trim();
+            const body = {
+                input: q,
+                languageCode,
+                regionCode,
+                sessionToken,
+                includeQueryPredictions: false,
+            };
+            const fieldMask = [
+                'suggestions.placePrediction.place.id',
+                'suggestions.placePrediction.place.displayName.text',
+                'suggestions.placePrediction.place.formattedAddress',
+            ].join(',');
+            const resp = await fetch(`${PLACES_API_URL}/places:autocomplete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Goog-Api-Key': apiKey,
+                    'X-Goog-FieldMask': fieldMask,
+                },
+                body: JSON.stringify(body),
+            });
+            if (!resp.ok) {
+                const t = await resp.text().catch(() => '');
+                console.error('[placesAutocomplete] error', resp.status, t);
+                res.status(500).json({ error: 'places_autocomplete_failed' });
+                return;
+            }
+            const data = await resp.json();
+            const items = (data.suggestions || [])
+                .map((s) => {
+                const p = s.placePrediction?.place || {};
+                const id = p.id || (p.name && String(p.name).split('/')[1]) || null;
+                if (!id)
+                    return null;
+                return {
+                    id,
+                    label: p.displayName?.text || p.formattedAddress || '',
+                    address: p.formattedAddress || '',
+                };
+            })
+                .filter(Boolean);
+            res.json({ items });
+        }
+        catch (e) {
+            console.error('[placesAutocomplete] exception', e);
+            res.status(500).json({ error: 'places_autocomplete_failed' });
+        }
+    });
+});
+exports.placeDetails = functions
+    .region('us-central1')
+    .https.onRequest(async (req, res) => {
+    cors(req, res, async () => {
+        try {
+            if (req.method !== 'GET') {
+                res.status(405).send('Method Not Allowed');
+                return;
+            }
+            const apiKey = getMapsApiKey();
+            if (!apiKey) {
+                res.status(500).json({ error: 'maps_api_key_missing' });
+                return;
+            }
+            const id = String(req.query.id || '').trim();
+            if (!id) {
+                res.status(400).json({ error: 'id required' });
+                return;
+            }
+            const languageCode = String((req.query.lang || 'es')).trim();
+            const regionCode = String((req.query.region || 'AR')).trim();
+            const sessionToken = String((req.query.session || '')).trim() || undefined;
+            const fieldMask = ['id', 'displayName', 'formattedAddress', 'location'].join(',');
+            const url = `${PLACES_API_URL}/places/${encodeURIComponent(id)}`;
+            const params = new URLSearchParams();
+            params.set('languageCode', languageCode);
+            params.set('regionCode', regionCode);
+            if (sessionToken)
+                params.set('sessionToken', sessionToken);
+            const resp = await fetch(`${url}?${params.toString()}`, {
+                method: 'GET',
+                headers: {
+                    'X-Goog-Api-Key': apiKey,
+                    'X-Goog-FieldMask': fieldMask,
+                },
+            });
+            if (!resp.ok) {
+                const t = await resp.text().catch(() => '');
+                console.error('[placeDetails] error', resp.status, t);
+                res.status(500).json({ error: 'places_details_failed' });
+                return;
+            }
+            const data = await resp.json();
+            const loc = data.location?.latLng || data.location || {};
+            const lat = loc?.latitude ?? loc?.lat ?? null;
+            const lng = loc?.longitude ?? loc?.lng ?? null;
+            res.json({
+                id: data.id || id,
+                name: data.displayName?.text || '',
+                address: data.formattedAddress || '',
+                lat,
+                lng,
+            });
+        }
+        catch (e) {
+            console.error('[placeDetails] exception', e);
+            res.status(500).json({ error: 'places_details_failed' });
+        }
+    });
 });
 //# sourceMappingURL=index.js.map

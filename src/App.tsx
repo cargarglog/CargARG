@@ -6,7 +6,7 @@ import LandingPage from './components/LoadList';
 // add Suspense to existing React import
 const VerifyAccountPage = React.lazy(() => import('./components/ChatBot').then(m => ({ default: m.VerifyAccountPage })));
 const VerifyIdPage = React.lazy(() => import('./components/ChatBot').then(m => ({ default: m.VerifyIdPage })));
-const PostLoadPage = React.lazy(() => import('./components/ChatBot').then(m => ({ default: m.PostLoadPage })));
+const PostLoadPage = React.lazy(() => import('./components/PostLoadPagePlaces'));
 const LoadDetailsPage = React.lazy(() => import('./components/ChatBot').then(m => ({ default: m.LoadDetailsPage })));
 const PlansPage = React.lazy(() => import('./components/ChatBot').then(m => ({ default: m.PlansPage })));
 const PendingVerificationPage = React.lazy(() => import('./components/ChatBot').then(m => ({ default: m.PendingVerificationPage })));
