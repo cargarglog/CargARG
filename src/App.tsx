@@ -475,6 +475,20 @@ const App: React.FC = () => {
         alert(`Plan actualizado a ${plan}!`);
     };
 
+    const handleCancelSubscription = async () => {
+        if (!user) {
+            handleNavigate('login');
+            return;
+        }
+        const confirmed = window.confirm('¿Seguro que deseas cancelar tu suscripción?');
+        if (!confirmed) return;
+        const userDocRef = firestore.doc(db, 'users', user.id);
+        await firestore.updateDoc(userDocRef, { plan: 'free' });
+        setUser({ ...user, plan: 'free' });
+        alert('Suscripción cancelada. Has vuelto al plan Free.');
+        handleNavigate('dashboard');
+    };
+
     const renderPage = () => {
         if (isLoading && user) {
             return (
@@ -486,7 +500,7 @@ const App: React.FC = () => {
 
         if (!user) {
             return page === 'login' 
-                ? <LoginPage onLogin={handleLogin} onRegister={handleRegister} onNavigate={handleNavigate} onGoogleSignIn={handleGoogleSignIn} />
+                ? <LoginPage onLogin={handleLogin} onRegister={handleRegister} onNavigate={handleNavigate} onGoogleSignIn={handleGoogleSignIn} onLogout={handleLogout} />
                 : <LandingPage onNavigate={handleNavigate} user={user} />;
         }
         
@@ -532,7 +546,7 @@ const App: React.FC = () => {
                     Est�s desconectado. La funcionalidad puede ser limitada.
                 </div>
             )}
-            <Navbar user={user} onNavigate={handleNavigate} onLogout={handleLogout} isOnline={isOnline} />
+            <Navbar user={user} onNavigate={handleNavigate} onLogout={handleLogout} isOnline={isOnline} onCancelSubscription={handleCancelSubscription} />
             <main>
                 {renderPage()}
             </main>

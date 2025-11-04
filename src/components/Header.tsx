@@ -6,9 +6,10 @@ interface NavbarProps {
   onNavigate: (page: string) => void;
   onLogout: () => void;
   isOnline: boolean;
+  onCancelSubscription?: () => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ user, onNavigate, onLogout, isOnline }) => {
+const Navbar: React.FC<NavbarProps> = ({ user, onNavigate, onLogout, isOnline, onCancelSubscription }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const [canInstall, setCanInstall] = useState(false);
@@ -101,7 +102,7 @@ const Navbar: React.FC<NavbarProps> = ({ user, onNavigate, onLogout, isOnline })
                 <i className={`fas fa-chevron-down text-xs text-gray-400 transition-transform ${menuOpen ? 'rotate-180' : ''}`}></i>
               </button>
               {menuOpen && (
-                <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-50 border border-gray-700">
+                <div className="absolute right-0 mt-2 w-56 bg-gray-800 rounded-md shadow-lg py-1 z-50 border border-gray-700">
                   {user.role === UserRole.STAFF ? (
                     <a onClick={() => { onNavigate('staffDashboard'); setMenuOpen(false); }} className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 cursor-pointer">Panel de Staff</a>
                   ) : (
@@ -114,6 +115,9 @@ const Navbar: React.FC<NavbarProps> = ({ user, onNavigate, onLogout, isOnline })
                     <a onClick={() => { onNavigate('dashboard'); setMenuOpen(false); }} className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 cursor-pointer">Mis Viajes</a>
                   )}
                   <a onClick={() => { onNavigate('plans'); setMenuOpen(false); }} className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 cursor-pointer">Planes</a>
+                  {user.plan !== 'free' && (
+                    <a onClick={() => { onCancelSubscription && onCancelSubscription(); setMenuOpen(false); }} className="block px-4 py-2 text-sm text-red-300 hover:bg-gray-700 cursor-pointer">Cancelar Suscripción</a>
+                  )}
                   <div className="border-t border-gray-700 my-1"></div>
                   <a onClick={() => { onLogout(); setMenuOpen(false); }} className="block px-4 py-2 text-sm text-red-400 hover:bg-gray-700 cursor-pointer">Cerrar Sesión</a>
                 </div>
@@ -132,6 +136,14 @@ const Navbar: React.FC<NavbarProps> = ({ user, onNavigate, onLogout, isOnline })
                   <path d="M20 3h-8v2h8v14h-8v2h8a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z"></path>
                 </svg>
                 <span className="hidden sm:inline ml-2">Iniciar Sesión</span>
+              </button>
+              <button
+                onClick={() => onNavigate('login')}
+                className="bg-gray-700 text-white font-semibold py-2 px-3 sm:px-4 rounded-md hover:bg-gray-600 transition-all"
+                aria-label="Cancelar suscripción"
+                title="Cancelar suscripción"
+              >
+                Cancelar Suscripción
               </button>
             </>
           )}
