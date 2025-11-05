@@ -1,6 +1,6 @@
 {
   "projects": {
-    "default": "cargarg",
+    "default": "cargarg-logistica",
     "cargarg": "cargarg-logistica"
   },
   "targets": {},
