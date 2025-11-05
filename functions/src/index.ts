@@ -172,3 +172,5 @@ export const guardDniUniqueness = functions.region('us-central1').https.onCall(a
 
 // Subscriptions (Google/Apple/Paddle)
 export * from './subscriptions';
+export * from './chatbot';
+export * from './tripChatHook';

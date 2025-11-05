@@ -235,4 +235,6 @@ exports.guardDniUniqueness = functions.region('us-central1').https.onCall(async 
 });
 // Subscriptions (Google/Apple/Paddle)
 __exportStar(require("./subscriptions"), exports);
+__exportStar(require("./chatbot"), exports);
+__exportStar(require("./tripChatHook"), exports);
 //# sourceMappingURL=index.js.map

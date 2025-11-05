@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@google-cloud/documentai": "^3.3.0",
+    "@google-cloud/speech": "^6.4.0",
     "@google-cloud/vision": "^4.3.2",
     "axios": "^1.13.2",
     "cargon": "file:..",
