@@ -1,5 +1,6 @@
 // CargARG Identity Extended Integration — Firebase Cloud Functions
 // CargARG Identity Extended Integration
+import './env';
 import * as functions from 'firebase-functions/v1';
 
 import * as admin from 'firebase-admin';
@@ -168,3 +169,6 @@ export const guardDniUniqueness = functions.region('us-central1').https.onCall(a
   const conflict = val.uid && val.uid !== uid && ['verified', 'banned'].includes(val.verificationStatus);
   return { ok: true, conflict };
 });
+
+// Subscriptions (Google/Apple/Paddle)
+export * from './subscriptions';
