@@ -137,14 +137,7 @@ const Navbar: React.FC<NavbarProps> = ({ user, onNavigate, onLogout, isOnline, o
                 </svg>
                 <span className="hidden sm:inline ml-2">Iniciar Sesión</span>
               </button>
-              <button
-                onClick={() => onNavigate('login')}
-                className="bg-gray-700 text-white font-semibold py-2 px-3 sm:px-4 rounded-md hover:bg-gray-600 transition-all"
-                aria-label="Cancelar suscripción"
-                title="Cancelar suscripción"
-              >
-                Cancelar Suscripción
-              </button>
+              
             </>
           )}
         </nav>

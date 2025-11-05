@@ -7,10 +7,9 @@ interface LoginPageProps {
     onRegister: (email: string, pass: string, role: UserRole, companyName?: string) => Promise<any>;
     onNavigate: (page: string) => void;
     onGoogleSignIn: (role: UserRole, companyName?: string) => Promise<void>;
-    onLogout: () => void;
 }
 
-const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onRegister, onNavigate, onGoogleSignIn, onLogout }) => {
+const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onRegister, onNavigate, onGoogleSignIn }) => {
     const [isLoginView, setIsLoginView] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -148,15 +147,7 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onRegister, onNavigate, 
                     {loading && <i className="fas fa-spinner fa-spin mr-2"></i>}
                     {isLoginView ? 'Iniciar Sesión' : 'Registrarse'}
                 </button>
-                {isLoginView && (
-                    <button
-                        type="button"
-                        onClick={async () => { try { await onLogout(); } finally { onNavigate('landing'); } }}
-                        className="w-full mt-3 bg-gray-700 text-white font-semibold py-3 rounded-md hover:bg-gray-600 transition-all"
-                    >
-                        Cerrar sesiA3n
-                    </button>
-                )}
+                
             </form>
 
             <div className="my-6 flex items-center">

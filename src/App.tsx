@@ -500,7 +500,7 @@ const App: React.FC = () => {
 
         if (!user) {
             return page === 'login' 
-                ? <LoginPage onLogin={handleLogin} onRegister={handleRegister} onNavigate={handleNavigate} onGoogleSignIn={handleGoogleSignIn} onLogout={handleLogout} />
+                ? <LoginPage onLogin={handleLogin} onRegister={handleRegister} onNavigate={handleNavigate} onGoogleSignIn={handleGoogleSignIn} />
                 : <LandingPage onNavigate={handleNavigate} user={user} />;
         }
         
