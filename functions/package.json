@@ -13,6 +13,7 @@
     "@google-cloud/documentai": "^3.3.0",
     "@google-cloud/vision": "^4.3.2",
     "axios": "^1.13.2",
+    "cargon": "file:..",
     "cors": "^2.8.5",
     "firebase-admin": "^12.6.0",
     "firebase-functions": "^6.2.0",
