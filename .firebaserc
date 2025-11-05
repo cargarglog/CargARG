@@ -1,5 +1,8 @@
 {
   "projects": {
-    "default": "cargarg"
-  }
+    "default": "cargarg",
+    "cargarg": "cargarg-logistica"
+  },
+  "targets": {},
+  "etags": {}
 }
