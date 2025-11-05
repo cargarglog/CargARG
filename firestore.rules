@@ -15,10 +15,22 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'staff';
     }
 
+    function isFunctionAuth() {
+      return request.auth != null && request.auth.token.firebase.sign_in_provider == 'custom';
+    }
+
+    function changingSubscription() {
+      return request.resource.data.diff(resource.data).changedKeys().hasAny(['subscription']);
+    }
+
     // USERS
     match /users/{userId} {
-      allow read, update, delete: if isSelf(userId);
+      allow read, delete: if isSelf(userId);
+      // Owner can update but not the subscription field
+      allow update: if isSelf(userId) && !changingSubscription();
       allow read, update: if isStaff();
+      // Functions/custom tokens can update subscription
+      allow update: if isFunctionAuth() && changingSubscription();
       allow create: if isSignedIn();
     }
 
@@ -43,8 +55,7 @@ service cloud.firestore {
     match /dniRegistry/{dniNumber} {
       allow read: if isStaff();
       // Writes only from Functions/custom tokens
-      allow create, update: if request.auth != null
-        && request.auth.token.firebase.sign_in_provider == 'custom';
+      allow create, update: if isFunctionAuth();
       allow delete: if false;
     }
 
