@@ -8,11 +8,11 @@ interface LandingPageProps {
 
 const FeatureCard: React.FC<{ icon: string; title: string; children: React.ReactNode }> = ({ icon, title, children }) => (
     <div className="bg-gray-800 p-6 rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 transform hover:-translate-y-1">
-        <div className="flex items-center mb-3">
-            <i className={`fas ${icon} text-2xl text-brand-500 mr-4`}></i>
-            <h3 className="text-xl font-bold text-brand-400">{title}</h3>
+        <div className="flex flex-col items-center mb-3 text-center">
+            <i className={`fas ${icon} text-2xl text-brand-500 mb-2`}></i>
+            <h3 className="text-xl font-bold text-brand-400 text-center">{title}</h3>
         </div>
-        <p className="text-gray-400">{children}</p>
+        <p className="text-gray-400 text-center">{children}</p>
     </div>
 );
 
