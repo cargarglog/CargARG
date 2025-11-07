@@ -26,8 +26,8 @@ const PlanCard: React.FC<{ title: string; price: string; features: string[]; pri
 
 
     return (
-        <div className={`border rounded-lg p-8 flex flex-col ${primary ? 'bg-gray-900 text-white border-gray-700 transform scale-105 shadow-2xl' : 'bg-gray-800 text-gray-300 border-gray-700'}`}>
-            <h3 className={`text-2xl font-bold ${primary ? 'text-white' : 'text-brand-400'}`}>{title}</h3>
+        <div className={`border rounded-lg p-8 flex flex-col h-full ${primary ? 'bg-gray-900 text-white border-gray-700 shadow-2xl' : 'bg-gray-800 text-gray-300 border-gray-700'}`}>
+            <h3 className={`text-2xl font-bold text-center ${primary ? 'text-white' : 'text-brand-400'}`}>{title}</h3>
             <p className={`text-4xl font-extrabold my-4 ${primary ? 'text-gray-100' : 'text-gray-100'}`}>{price}</p>
             <ul className={`space-y-3 mb-8 ${primary ? '' : 'text-gray-400'}`}>
                 {features.map((feature, i) => {
@@ -107,7 +107,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
         <div className="max-w-7xl mx-auto px-4">
             <div className="mb-20">
                 <h2 className="text-3xl font-bold text-center text-gray-100 mb-12">Para Conductores</h2>
-                <div className="grid md:grid-cols-2 gap-8 items-start max-w-4xl mx-auto">
+                <div className="grid md:grid-cols-2 gap-8 items-stretch max-w-4xl mx-auto">
                     <PlanCard 
                         title="FREE" 
                         price="Gratis" 
@@ -147,7 +147,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
 
             <div>
                 <h2 className="text-3xl font-bold text-center text-gray-100 mb-12">Para Empresas de Logística</h2>
-                <div className="grid md:grid-cols-2 gap-8 items-start max-w-4xl mx-auto">
+                <div className="grid md:grid-cols-2 gap-8 items-stretch max-w-4xl mx-auto">
                     <PlanCard 
                         title="FREE" 
                         price="Gratis" 
