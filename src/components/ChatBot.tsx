@@ -60,14 +60,14 @@ export const PlansPage: React.FC<PlansPageProps> = ({ user, onBack, onUpgradePla
         // Driver Plans
         (
             <div className="grid md:grid-cols-2 gap-8 items-start max-w-4xl mx-auto">
-                <PlanCard title="FREE" price="Gratis" features={["5 asignaciones mensuales", "Rango de operación: 150 km", "Emparejamiento por IA", "Chat con IA (básico)"]} planType="free" onSelectPlan={onUpgradePlan} currentUserPlan={user.plan} />
+                <PlanCard title="BASICO" price="Gratis" features={["5 asignaciones mensuales", "Rango de operación: 150 km", "Emparejamiento por IA", "Chat con IA (básico)"]} planType="free" onSelectPlan={onUpgradePlan} currentUserPlan={user.plan} />
                 <PlanCard title="SILVER" price="USD 20/mes" features={["20 asignaciones mensuales", "Rango de operación: 250 km", "GPS con IA predictiva", "Filtros avanzados"]} primary planType="silver" onSelectPlan={onUpgradePlan} currentUserPlan={user.plan} />
             </div>
         ) :
         // Company Plans
         (
             <div className="grid md:grid-cols-2 gap-8 items-start max-w-4xl mx-auto">
-                <PlanCard title="FREE" price="Gratis" features={["15 publicaciones mensuales", "Emparejamiento por IA", "Chat con IA (básico)", "Identidad verificada"]} planType="free" onSelectPlan={onUpgradePlan} currentUserPlan={user.plan} />
+                <PlanCard title="BASICO" price="Gratis" features={["15 publicaciones mensuales", "Emparejamiento por IA", "Chat con IA (básico)", "Identidad verificada"]} planType="free" onSelectPlan={onUpgradePlan} currentUserPlan={user.plan} />
                 <PlanCard title="SILVER" price="USD 20/mes" features={["50 publicaciones mensuales", "Publicaciones destacadas", "Emparejamiento con camiones verificados", "Soporte prioritario"]} primary planType="silver" onSelectPlan={onUpgradePlan} currentUserPlan={user.plan} />
             </div>
         );
@@ -947,6 +947,7 @@ export const VerifyIdPage: React.FC<{ user: User; onIdentitySubmitted: (dni: str
         </div>
     );
 };
+
 
 
 

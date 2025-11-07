@@ -109,7 +109,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                 <h2 className="text-3xl font-bold text-center text-gray-100 mb-12">Para Conductores</h2>
                 <div className="grid md:grid-cols-2 gap-8 items-stretch max-w-4xl mx-auto">
                     <PlanCard 
-                        title="FREE" 
+                        title="BASICO" 
                         price="Gratis" 
                         features={[
                             "5 asignaciones mensuales",
@@ -149,7 +149,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
                 <h2 className="text-3xl font-bold text-center text-gray-100 mb-12">Para Empresas de Logística</h2>
                 <div className="grid md:grid-cols-2 gap-8 items-stretch max-w-4xl mx-auto">
                     <PlanCard 
-                        title="FREE" 
+                        title="BASICO" 
                         price="Gratis" 
                         features={[
                             "15 publicaciones mensuales",
