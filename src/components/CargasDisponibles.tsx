@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+
+const MAPS_API_KEY = (import.meta.env as any)?.VITE_GOOGLE_MAPS_API_KEY || '';
 
 // Inline icon components (lucide-like) to avoid external deps
 const IconUser: React.FC<{ className?: string }> = ({ className }) => (
@@ -47,8 +49,114 @@ const IconTruck: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
+declare global {
+  interface Window {
+    __cargARGPlacesPromise?: Promise<typeof google.maps>;
+  }
+}
+
+async function loadPlacesSdk(): Promise<typeof google.maps> {
+  if (typeof window === 'undefined') {
+    throw new Error('Entorno sin ventana');
+  }
+  if (window.google?.maps?.places) {
+    return window.google.maps;
+  }
+  if (window.__cargARGPlacesPromise) {
+    return window.__cargARGPlacesPromise;
+  }
+  if (!MAPS_API_KEY) {
+    throw new Error('VITE_GOOGLE_MAPS_API_KEY no configurada');
+  }
+
+  window.__cargARGPlacesPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    const params = new URLSearchParams({
+      key: MAPS_API_KEY,
+      libraries: 'places',
+      language: 'es',
+    });
+    script.src = `https://maps.googleapis.com/maps/api/js?${params.toString()}`;
+    script.async = true;
+    script.defer = true;
+    script.onerror = () => reject(new Error('No fue posible cargar Google Places.'));
+    script.onload = () => {
+      if (window.google?.maps?.places) {
+        resolve(window.google.maps);
+      } else {
+        reject(new Error('Google Places no disponible tras cargar el script.'));
+      }
+    };
+    document.head.appendChild(script);
+  }).catch((error) => {
+    delete window.__cargARGPlacesPromise;
+    throw error;
+  });
+
+  return window.__cargARGPlacesPromise;
+}
+
 const CargasDisponibles: React.FC = () => {
   const [orderOpen, setOrderOpen] = useState(false);
+  const [originQuery, setOriginQuery] = useState('');
+  const [destinationQuery, setDestinationQuery] = useState('');
+  const [originSelection, setOriginSelection] = useState<string | null>(null);
+  const [destinationSelection, setDestinationSelection] = useState<string | null>(null);
+  const [placesError, setPlacesError] = useState<string | null>(null);
+  const originInputRef = useRef<HTMLInputElement | null>(null);
+  const destinationInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    let originAutocomplete: google.maps.places.Autocomplete | null = null;
+    let destinationAutocomplete: google.maps.places.Autocomplete | null = null;
+
+    loadPlacesSdk()
+      .then((maps) => {
+        const Autocomplete = maps.places.Autocomplete;
+        const options: google.maps.places.AutocompleteOptions = {
+          fields: ['formatted_address', 'geometry', 'place_id', 'name'],
+          types: ['geocode'],
+          componentRestrictions: { country: 'ar' },
+        };
+
+        if (originInputRef.current) {
+          originAutocomplete = new Autocomplete(originInputRef.current, options);
+          originAutocomplete.addListener('place_changed', () => {
+            const place = originAutocomplete?.getPlace();
+            if (place?.formatted_address) {
+              setOriginSelection(place.formatted_address);
+              setOriginQuery(place.formatted_address);
+              setPlacesError(null);
+            }
+          });
+        }
+
+        if (destinationInputRef.current) {
+          destinationAutocomplete = new Autocomplete(destinationInputRef.current, options);
+          destinationAutocomplete.addListener('place_changed', () => {
+            const place = destinationAutocomplete?.getPlace();
+            if (place?.formatted_address) {
+              setDestinationSelection(place.formatted_address);
+              setDestinationQuery(place.formatted_address);
+              setPlacesError(null);
+            }
+          });
+        }
+      })
+      .catch((error) => {
+        console.error('[CargasDisponibles] Places error', error);
+        setPlacesError('No se pudo activar el autocompletado de direcciones.');
+      });
+
+    return () => {
+      if (originAutocomplete) {
+        window.google?.maps?.event?.clearInstanceListeners(originAutocomplete);
+      }
+      if (destinationAutocomplete) {
+        window.google?.maps?.event?.clearInstanceListeners(destinationAutocomplete);
+      }
+    };
+  }, []);
 
   return (
     <div className="min-h-screen text-gray-100 bg-gradient-to-b from-[#7F1D1D] via-[#111827] to-[#0B1220]">
@@ -92,6 +200,65 @@ const CargasDisponibles: React.FC = () => {
           </section>
 
           {/* Filtros */}
+          <section className="bg-[#111827] border border-white/10 text-gray-100 shadow-lg rounded-2xl">
+            <div className="p-5 sm:p-6">
+              <h4 className="text-white text-base sm:text-lg font-semibold">Elegí la ruta</h4>
+              <p className="text-gray-300 text-sm mt-1">Elige origen y destino para priorizar resultados cercanos.</p>
+
+              <div className="mt-4 space-y-4">
+                <div>
+                  <label htmlFor="origin" className="block mb-1 text-sm text-gray-400">
+                    Origen
+                  </label>
+                  <input
+                    ref={originInputRef}
+                    id="origin"
+                    type="text"
+                    value={originQuery}
+                    onChange={(event) => {
+                      setOriginQuery(event.target.value);
+                      setOriginSelection(null);
+                    }}
+                    placeholder="Ingresa una dirección"
+                    className="w-full bg-[#0F172A] text-gray-200 border border-white/10 rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-[#DC2626]"
+                    autoComplete="off"
+                  />
+                  {originSelection && (
+                    <p className="text-xs text-gray-400 mt-1">Seleccionaste: {originSelection}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label htmlFor="destination" className="block mb-1 text-sm text-gray-400">
+                    Destino
+                  </label>
+                  <input
+                    ref={destinationInputRef}
+                    id="destination"
+                    type="text"
+                    value={destinationQuery}
+                    onChange={(event) => {
+                      setDestinationQuery(event.target.value);
+                      setDestinationSelection(null);
+                    }}
+                    placeholder="Ingresa una dirección"
+                    className="w-full bg-[#0F172A] text-gray-200 border border-white/10 rounded-xl py-2 px-3 focus:outline-none focus:ring-2 focus:ring-[#DC2626]"
+                    autoComplete="off"
+                  />
+                  {destinationSelection && (
+                    <p className="text-xs text-gray-400 mt-1">Seleccionaste: {destinationSelection}</p>
+                  )}
+                </div>
+
+                {placesError && (
+                  <p className="text-sm text-amber-400">
+                    {placesError}
+                  </p>
+                )}
+              </div>
+            </div>
+          </section>
+
           <section className="bg-[#111827] border border-white/10 text-gray-100 shadow-lg rounded-2xl">
             <div className="p-5 sm:p-6">
               <h4 className="text-white text-base sm:text-lg font-semibold">Filtrar Cargas</h4>
@@ -189,4 +356,3 @@ const CargasDisponibles: React.FC = () => {
 };
 
 export default CargasDisponibles;
-
