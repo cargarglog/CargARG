@@ -187,7 +187,7 @@ const LandingPage: React.FC<LandingPageProps> = ({ onNavigate, user }) => {
       <footer className="bg-charcoal-900 text-white text-center py-6">
         <p>
           <span className="font-semibold"><span>Carg</span><span className="text-brand-500">ARG</span></span>
-          &nbsp;&copy; 2025 - Conectamos cargas con destinos. En segundos. - Todos los derechos reservados.
+          &nbsp;&copy; 2025 - Conectamos cargas con detinso en segundos - Todos los derechos reservados.
         </p>
       </footer>
     </div>
